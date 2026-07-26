@@ -10,7 +10,7 @@ Incident Signal groups tickets by issue category and evaluates their timestamps 
 
 ## How It Works
 
-The current detection rule flags a potential incident when:
+The default detection rule flags a potential incident when:
 
 - At least three tickets share the same category.
 - Those tickets occur within a 30-minute window.
@@ -30,6 +30,7 @@ The included sample dataset contains four login-failure reports within 19 minute
 
 ```text
 Analyzed 6 support tickets.
+Detection rule: 3 tickets within 30 minutes.
 Detected 1 potential incident(s):
 
 Category: login_failure
@@ -46,11 +47,13 @@ incident-signal/
 ├── data/
 │   └── sample_tickets.json
 ├── src/
+│   ├── __init__.py
 │   ├── detection.py
 │   ├── ingestion.py
 │   ├── main.py
 │   └── models.py
 ├── tests/
+│   ├── __init__.py
 │   └── test_detection.py
 ├── requirements.txt
 └── README.md
@@ -58,15 +61,19 @@ incident-signal/
 
 ## Design Decisions
 
-### Deterministic detection
+### Deterministic Detection
 
 The first version uses transparent threshold rules instead of artificial intelligence. This makes every incident signal explainable and allows the detection behavior to be tested reliably.
 
-### Sliding time window
+### Sliding Time Window
 
-A sliding window identifies the largest cluster of tickets for each issue category. This is more flexible than dividing tickets into fixed time blocks.
+A sliding window identifies the largest qualifying cluster of tickets for each issue category. This is more flexible than dividing tickets into fixed time blocks.
 
-### Input validation
+### Configurable Business Rules
+
+Detection thresholds can be changed through command-line options without modifying the source code. This allows the same system to support teams with different ticket volumes and escalation requirements.
+
+### Input Validation
 
 The ingestion layer verifies that ticket data is a list and that every ticket contains the required fields:
 
@@ -77,27 +84,27 @@ The ingestion layer verifies that ticket data is a list and that every ticket co
 
 Invalid data produces a clear error instead of being processed silently.
 
-### Synthetic data
+### Synthetic Data
 
 All sample tickets are fictional. The repository contains no customer information, employer data, or proprietary support records.
 
 ## Running the Project
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/kay-freeman/incident-signal.git
 cd incident-signal
 ```
 
-### 2. Create and activate a virtual environment
+### 2. Create and Activate a Virtual Environment
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install the test dependency
+### 3. Install the Test Dependency
 
 ```bash
 python -m pip install -r requirements.txt
@@ -105,11 +112,28 @@ python -m pip install -r requirements.txt
 
 ### 4. Run Incident Signal
 
+Run the system with its default rule of three related tickets within 30 minutes:
+
 ```bash
 python -m src.main
 ```
 
-### 5. Run the automated tests
+Customize the rule with command-line options:
+
+```bash
+python -m src.main --threshold 4 --window 45
+```
+
+- `--threshold` controls the minimum number of related tickets required.
+- `--window` controls the detection window in minutes.
+
+View all available options:
+
+```bash
+python -m src.main --help
+```
+
+### 5. Run the Automated Tests
 
 ```bash
 pytest -v
@@ -126,7 +150,7 @@ The automated test suite verifies that the system:
 
 ## Future Enhancements
 
-- Accept configurable thresholds through command-line options.
+- Accept alternative input files through command-line options.
 - Ingest CSV exports and webhook payloads.
 - Detect multiple incidents within the same category.
 - Generate structured JSON incident reports.
@@ -140,6 +164,7 @@ The automated test suite verifies that the system:
 - Systems analysis
 - Data modeling
 - Input validation
+- Configurable business rules
 - Rule-based automation
 - Time-window analysis
 - Python development
