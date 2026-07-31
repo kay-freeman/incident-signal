@@ -1,5 +1,7 @@
 # Incident Signal
 
+[![Tests](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml/badge.svg)](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml)
+
 A rule-based incident detection system that identifies emerging patterns across support tickets before isolated reports become a larger operational problem.
 
 ## The Problem
@@ -76,6 +78,9 @@ Tickets: TKT-1001, TKT-1002, TKT-1003, TKT-1004
 
 ```text
 incident-signal/
+├── .github/
+│   └── workflows/
+│       └── tests.yml
 ├── data/
 │   └── sample_tickets.json
 ├── src/
@@ -241,6 +246,12 @@ The tests verify that the system:
 - Produces a structured JSON incident report.
 - Produces a valid JSON report when no incidents are detected.
 
+## Continuous Integration
+
+GitHub Actions automatically installs the project dependencies and runs all 13 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
+
+The test-status badge at the top of this README reflects the latest workflow result from the `main` branch.
+
 ## Future Enhancements
 
 - Ingest CSV exports and webhook payloads.
@@ -264,5 +275,6 @@ The tests verify that the system:
 - Machine-readable reporting
 - Python development
 - Automated testing
+- Continuous integration with GitHub Actions
 - Technical documentation
 - Integration-ready design
