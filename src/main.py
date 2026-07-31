@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .detection import detect_incidents
 from .ingestion import load_tickets
+from .reporting import build_json_report
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -36,6 +37,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Detection window in minutes (default: 30).",
     )
 
+    parser.add_argument(
+        "--format",
+        dest="output_format",
+        choices=("text", "json"),
+        default="text",
+        help="Report format: text or json (default: text).",
+    )
+
     return parser.parse_args()
 
 
@@ -60,6 +69,18 @@ def main() -> None:
         )
     except ValueError as error:
         raise SystemExit(f"Error: {error}")
+
+    if arguments.output_format == "json":
+        print(
+            build_json_report(
+                input_file=arguments.input,
+                tickets_analyzed=len(tickets),
+                incidents=incidents,
+                threshold=arguments.threshold,
+                window_minutes=arguments.window,
+            )
+        )
+        return
 
     print(f"Input file: {arguments.input}")
     print(f"Analyzed {len(tickets)} support tickets.")

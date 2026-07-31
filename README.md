@@ -21,12 +21,13 @@ flowchart LR
     B --> C[Create ticket records]
     C --> D[Group by category]
     D --> E[Apply sliding time window]
-    E --> F[Report incident signals]
+    E --> F[Build report]
+    F --> G[Text or JSON output]
 ```
 
 The included sample dataset contains four login-failure reports within 19 minutes. Incident Signal detects them as one potential incident while ignoring unrelated billing and profile tickets.
 
-## Example Output
+## Example Text Output
 
 ```text
 Input file: data/sample_tickets.json
@@ -41,6 +42,36 @@ Last seen: 2026-07-26 09:21:00
 Tickets: TKT-1001, TKT-1002, TKT-1003, TKT-1004
 ```
 
+## Example JSON Output
+
+```json
+{
+  "input_file": "data/sample_tickets.json",
+  "summary": {
+    "tickets_analyzed": 6,
+    "incidents_detected": 1
+  },
+  "detection_rule": {
+    "threshold": 3,
+    "window_minutes": 30
+  },
+  "incidents": [
+    {
+      "category": "login_failure",
+      "ticket_count": 4,
+      "first_seen": "2026-07-26T09:02:00",
+      "last_seen": "2026-07-26T09:21:00",
+      "ticket_ids": [
+        "TKT-1001",
+        "TKT-1002",
+        "TKT-1003",
+        "TKT-1004"
+      ]
+    }
+  ]
+}
+```
+
 ## Project Structure
 
 ```text
@@ -52,11 +83,13 @@ incident-signal/
 │   ├── detection.py
 │   ├── ingestion.py
 │   ├── main.py
-│   └── models.py
+│   ├── models.py
+│   └── reporting.py
 ├── tests/
 │   ├── __init__.py
 │   ├── test_detection.py
-│   └── test_ingestion.py
+│   ├── test_ingestion.py
+│   └── test_reporting.py
 ├── requirements.txt
 └── README.md
 ```
@@ -78,6 +111,14 @@ Detection thresholds can be changed through command-line options without modifyi
 ### Configurable Input
 
 Users can analyze different JSON ticket files through the `--input` option. The detection engine is not tied exclusively to the included sample dataset.
+
+### Separate Reporting Layer
+
+Report generation is separated from ingestion and detection. This allows incident results to be presented in different formats without changing the underlying business rules.
+
+### Machine-Readable Output
+
+The `--format json` option produces a stable JSON structure that can be consumed by another application, webhook, dashboard, or incident-management workflow.
 
 ### Input Validation
 
@@ -122,7 +163,7 @@ python -m pip install -r requirements.txt
 
 ### 4. Run Incident Signal
 
-Run the system with the included sample data and the default rule:
+Run the included sample data with the default settings:
 
 ```bash
 python -m src.main
@@ -143,11 +184,20 @@ python -m src.main \
   --window 45
 ```
 
+Generate a machine-readable JSON report:
+
+```bash
+python -m src.main \
+  --input data/sample_tickets.json \
+  --format json
+```
+
 Available options:
 
 - `--input` selects the JSON ticket file.
 - `--threshold` controls the minimum number of related tickets required.
 - `--window` controls the detection window in minutes.
+- `--format` selects `text` or `json` output.
 
 View command-line help:
 
@@ -169,11 +219,11 @@ If the selected file does not exist, Incident Signal returns a concise error:
 Error: Input file not found: data/does_not_exist.json
 ```
 
-Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, and invalid detection settings are also rejected with clear messages.
+Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, invalid detection settings, and unsupported output formats are also rejected with clear messages.
 
 ## Test Coverage
 
-The automated suite contains 11 tests covering the detection and ingestion layers.
+The automated suite contains 13 tests covering the detection, ingestion, and reporting layers.
 
 The tests verify that the system:
 
@@ -188,13 +238,15 @@ The tests verify that the system:
 - Rejects duplicate ticket IDs.
 - Rejects malformed JSON.
 - Reports missing input files.
+- Produces a structured JSON incident report.
+- Produces a valid JSON report when no incidents are detected.
 
 ## Future Enhancements
 
 - Ingest CSV exports and webhook payloads.
 - Detect multiple incidents within the same category.
-- Generate structured JSON incident reports.
 - Add severity scoring.
+- Save reports directly to output files.
 - Send alerts to incident-management or communication systems.
 - Visualize ticket volume and detected incident timelines.
 
@@ -208,6 +260,9 @@ The tests verify that the system:
 - Error handling
 - Rule-based automation
 - Time-window analysis
+- Separation of concerns
+- Machine-readable reporting
 - Python development
 - Automated testing
 - Technical documentation
+- Integration-ready design
