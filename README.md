@@ -17,7 +17,7 @@ The default detection rule flags a potential incident when:
 
 ```mermaid
 flowchart LR
-    A[JSON ticket data] --> B[Validate fields]
+    A[JSON ticket file] --> B[Validate input]
     B --> C[Create ticket records]
     C --> D[Group by category]
     D --> E[Apply sliding time window]
@@ -29,6 +29,7 @@ The included sample dataset contains four login-failure reports within 19 minute
 ## Example Output
 
 ```text
+Input file: data/sample_tickets.json
 Analyzed 6 support tickets.
 Detection rule: 3 tickets within 30 minutes.
 Detected 1 potential incident(s):
@@ -54,7 +55,8 @@ incident-signal/
 │   └── models.py
 ├── tests/
 │   ├── __init__.py
-│   └── test_detection.py
+│   ├── test_detection.py
+│   └── test_ingestion.py
 ├── requirements.txt
 └── README.md
 ```
@@ -73,16 +75,24 @@ A sliding window identifies the largest qualifying cluster of tickets for each i
 
 Detection thresholds can be changed through command-line options without modifying the source code. This allows the same system to support teams with different ticket volumes and escalation requirements.
 
+### Configurable Input
+
+Users can analyze different JSON ticket files through the `--input` option. The detection engine is not tied exclusively to the included sample dataset.
+
 ### Input Validation
 
-The ingestion layer verifies that ticket data is a list and that every ticket contains the required fields:
+The ingestion layer verifies that:
 
-- `ticket_id`
-- `created_at`
-- `category`
-- `summary`
+- The selected input file exists.
+- The file contains valid JSON.
+- The top-level JSON value is a list.
+- Every ticket is a JSON object.
+- Every ticket contains the required fields.
+- Required values contain non-empty text.
+- Timestamps use a valid ISO format.
+- Ticket IDs are unique.
 
-Invalid data produces a clear error instead of being processed silently.
+Invalid input produces a clear operational error instead of being processed silently.
 
 ### Synthetic Data
 
@@ -112,22 +122,34 @@ python -m pip install -r requirements.txt
 
 ### 4. Run Incident Signal
 
-Run the system with its default rule of three related tickets within 30 minutes:
+Run the system with the included sample data and the default rule:
 
 ```bash
 python -m src.main
 ```
 
-Customize the rule with command-line options:
+Select a JSON ticket file:
 
 ```bash
-python -m src.main --threshold 4 --window 45
+python -m src.main --input data/sample_tickets.json
 ```
 
+Customize the ticket threshold and time window:
+
+```bash
+python -m src.main \
+  --input data/sample_tickets.json \
+  --threshold 4 \
+  --window 45
+```
+
+Available options:
+
+- `--input` selects the JSON ticket file.
 - `--threshold` controls the minimum number of related tickets required.
 - `--window` controls the detection window in minutes.
 
-View all available options:
+View command-line help:
 
 ```bash
 python -m src.main --help
@@ -139,18 +161,36 @@ python -m src.main --help
 pytest -v
 ```
 
+## Error Handling
+
+If the selected file does not exist, Incident Signal returns a concise error:
+
+```text
+Error: Input file not found: data/does_not_exist.json
+```
+
+Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, and invalid detection settings are also rejected with clear messages.
+
 ## Test Coverage
 
-The automated test suite verifies that the system:
+The automated suite contains 11 tests covering the detection and ingestion layers.
+
+The tests verify that the system:
 
 - Detects a qualifying ticket cluster.
-- Ignores categories below the ticket threshold.
+- Ignores categories below the configured threshold.
 - Ignores tickets outside the configured time window.
-- Rejects an invalid detection threshold.
+- Rejects invalid detection settings.
+- Loads valid JSON ticket data.
+- Rejects an invalid top-level data structure.
+- Rejects missing required fields.
+- Rejects invalid timestamps.
+- Rejects duplicate ticket IDs.
+- Rejects malformed JSON.
+- Reports missing input files.
 
 ## Future Enhancements
 
-- Accept alternative input files through command-line options.
 - Ingest CSV exports and webhook payloads.
 - Detect multiple incidents within the same category.
 - Generate structured JSON incident reports.
@@ -163,8 +203,9 @@ The automated test suite verifies that the system:
 - Requirements translation
 - Systems analysis
 - Data modeling
+- Configurable system design
 - Input validation
-- Configurable business rules
+- Error handling
 - Rule-based automation
 - Time-window analysis
 - Python development

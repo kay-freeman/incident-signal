@@ -59,4 +59,3 @@ def test_ignores_tickets_outside_time_window() -> None:
 def test_rejects_invalid_threshold() -> None:
     with pytest.raises(ValueError, match="Threshold must be at least 1"):
         detect_incidents([], threshold=0)
-        
