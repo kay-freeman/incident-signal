@@ -10,6 +10,8 @@ Support teams often receive the first signs of a service issue through individua
 
 Incident Signal groups tickets by issue category and evaluates their timestamps to identify unusual clusters. This gives support and operations teams an earlier signal that multiple customers may be experiencing the same problem.
 
+The system can also distinguish separate incidents involving the same issue category. For example, a login outage in the morning and another login outage later that afternoon are reported as two incidents instead of being combined or losing the smaller cluster.
+
 ## How It Works
 
 The default detection rule flags a potential incident when:
@@ -17,31 +19,45 @@ The default detection rule flags a potential incident when:
 - At least three tickets share the same category.
 - Those tickets occur within a 30-minute window.
 
+A quiet period longer than the configured window separates activity into distinct clusters. Each cluster must independently satisfy the detection threshold before it becomes an incident.
+
 ```mermaid
 flowchart LR
     A[JSON ticket file] --> B[Validate input]
-    B --> C[Create ticket records]
-    C --> D[Group by category]
-    D --> E[Apply sliding time window]
-    E --> F[Build report]
+    B --> C[Group by category]
+    C --> D[Separate activity clusters]
+    D --> E[Apply threshold window]
+    E --> F[Build incident reports]
     F --> G[Text or JSON output]
 ```
 
-The included sample dataset contains four login-failure reports within 19 minutes. Incident Signal detects them as one potential incident while ignoring unrelated billing and profile tickets.
+The included sample dataset contains nine fictional tickets:
+
+- Four login-failure reports between 9:02 AM and 9:21 AM
+- Two unrelated support requests
+- Three additional login-failure reports between 4:02 PM and 4:17 PM
+
+Incident Signal identifies the morning and afternoon login clusters as two separate incidents while ignoring the unrelated tickets.
 
 ## Example Text Output
 
 ```text
 Input file: data/sample_tickets.json
-Analyzed 6 support tickets.
+Analyzed 9 support tickets.
 Detection rule: 3 tickets within 30 minutes.
-Detected 1 potential incident(s):
+Detected 2 potential incident(s):
 
 Category: login_failure
 Ticket count: 4
 First seen: 2026-07-26 09:02:00
 Last seen: 2026-07-26 09:21:00
 Tickets: TKT-1001, TKT-1002, TKT-1003, TKT-1004
+
+Category: login_failure
+Ticket count: 3
+First seen: 2026-07-26 16:02:00
+Last seen: 2026-07-26 16:17:00
+Tickets: TKT-1007, TKT-1008, TKT-1009
 ```
 
 ## Example JSON Output
@@ -50,8 +66,8 @@ Tickets: TKT-1001, TKT-1002, TKT-1003, TKT-1004
 {
   "input_file": "data/sample_tickets.json",
   "summary": {
-    "tickets_analyzed": 6,
-    "incidents_detected": 1
+    "tickets_analyzed": 9,
+    "incidents_detected": 2
   },
   "detection_rule": {
     "threshold": 3,
@@ -68,6 +84,17 @@ Tickets: TKT-1001, TKT-1002, TKT-1003, TKT-1004
         "TKT-1002",
         "TKT-1003",
         "TKT-1004"
+      ]
+    },
+    {
+      "category": "login_failure",
+      "ticket_count": 3,
+      "first_seen": "2026-07-26T16:02:00",
+      "last_seen": "2026-07-26T16:17:00",
+      "ticket_ids": [
+        "TKT-1007",
+        "TKT-1008",
+        "TKT-1009"
       ]
     }
   ]
@@ -107,7 +134,18 @@ The first version uses transparent threshold rules instead of artificial intelli
 
 ### Sliding Time Window
 
-A sliding window identifies the largest qualifying cluster of tickets for each issue category. This is more flexible than dividing tickets into fixed time blocks.
+A sliding window verifies that the required number of related tickets occurred within the configured timeframe. This is more flexible than dividing tickets into fixed time blocks.
+
+### Multiple-Incident Detection
+
+Tickets are first grouped by category and sorted chronologically. A quiet gap longer than the configured detection window starts a new activity cluster.
+
+Every activity cluster must independently contain a qualifying threshold window. This allows Incident Signal to:
+
+- Detect separate incidents involving the same category.
+- Prevent tickets from being counted in multiple incidents.
+- Ignore slow activity that never reaches the required density.
+- Preserve all tickets associated with a qualifying activity period.
 
 ### Configurable Business Rules
 
@@ -228,11 +266,13 @@ Malformed JSON, missing fields, invalid timestamps, blank values, duplicate tick
 
 ## Test Coverage
 
-The automated suite contains 13 tests covering the detection, ingestion, and reporting layers.
+The automated suite contains 15 tests covering the detection, ingestion, and reporting layers.
 
 The tests verify that the system:
 
 - Detects a qualifying ticket cluster.
+- Detects multiple incidents in the same category.
+- Prevents slow activity from creating a false incident.
 - Ignores categories below the configured threshold.
 - Ignores tickets outside the configured time window.
 - Rejects invalid detection settings.
@@ -248,14 +288,13 @@ The tests verify that the system:
 
 ## Continuous Integration
 
-GitHub Actions automatically installs the project dependencies and runs all 13 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
+GitHub Actions automatically installs the project dependencies and runs all 15 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
 
 The test-status badge at the top of this README reflects the latest workflow result from the `main` branch.
 
 ## Future Enhancements
 
 - Ingest CSV exports and webhook payloads.
-- Detect multiple incidents within the same category.
 - Add severity scoring.
 - Save reports directly to output files.
 - Send alerts to incident-management or communication systems.
@@ -271,6 +310,8 @@ The test-status badge at the top of this README reflects the latest workflow res
 - Error handling
 - Rule-based automation
 - Time-window analysis
+- Multiple-incident detection
+- False-positive prevention
 - Separation of concerns
 - Machine-readable reporting
 - Python development

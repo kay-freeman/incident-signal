@@ -4,6 +4,52 @@ from datetime import timedelta
 from .models import Incident, SupportTicket
 
 
+def split_activity_clusters(
+    tickets: list[SupportTicket],
+    allowed_window: timedelta,
+) -> list[list[SupportTicket]]:
+    clusters = []
+    current_cluster = []
+
+    for ticket in tickets:
+        if (
+            current_cluster
+            and ticket.created_at - current_cluster[-1].created_at
+            > allowed_window
+        ):
+            clusters.append(current_cluster)
+            current_cluster = []
+
+        current_cluster.append(ticket)
+
+    if current_cluster:
+        clusters.append(current_cluster)
+
+    return clusters
+
+
+def contains_qualifying_window(
+    tickets: list[SupportTicket],
+    threshold: int,
+    allowed_window: timedelta,
+) -> bool:
+    window_start = 0
+
+    for window_end, ticket in enumerate(tickets):
+        while (
+            ticket.created_at - tickets[window_start].created_at
+            > allowed_window
+        ):
+            window_start += 1
+
+        tickets_in_window = window_end - window_start + 1
+
+        if tickets_in_window >= threshold:
+            return True
+
+    return False
+
+
 def detect_incidents(
     tickets: list[SupportTicket],
     threshold: int = 3,
@@ -26,31 +72,27 @@ def detect_incidents(
     for category, category_tickets in tickets_by_category.items():
         category_tickets.sort(key=lambda ticket: ticket.created_at)
 
-        window_start = 0
-        largest_cluster = []
+        activity_clusters = split_activity_clusters(
+            category_tickets,
+            allowed_window,
+        )
 
-        for window_end, ticket in enumerate(category_tickets):
-            while (
-                ticket.created_at
-                - category_tickets[window_start].created_at
-                > allowed_window
+        for cluster in activity_clusters:
+            if not contains_qualifying_window(
+                cluster,
+                threshold,
+                allowed_window,
             ):
-                window_start += 1
+                continue
 
-            current_cluster = category_tickets[window_start : window_end + 1]
-
-            if len(current_cluster) > len(largest_cluster):
-                largest_cluster = current_cluster
-
-        if len(largest_cluster) >= threshold:
             incidents.append(
                 Incident(
                     category=category,
-                    ticket_count=len(largest_cluster),
-                    first_seen=largest_cluster[0].created_at,
-                    last_seen=largest_cluster[-1].created_at,
+                    ticket_count=len(cluster),
+                    first_seen=cluster[0].created_at,
+                    last_seen=cluster[-1].created_at,
                     ticket_ids=tuple(
-                        ticket.ticket_id for ticket in largest_cluster
+                        ticket.ticket_id for ticket in cluster
                     ),
                 )
             )
