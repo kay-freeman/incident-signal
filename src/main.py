@@ -4,7 +4,11 @@ from pathlib import Path
 
 from .detection import detect_incidents
 from .ingestion import load_tickets
-from .reporting import build_json_report
+from .reporting import (
+    build_json_report,
+    build_text_report,
+    save_report,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -45,6 +49,12 @@ def parse_arguments() -> argparse.Namespace:
         help="Report format: text or json (default: text).",
     )
 
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Optional path where the report will be saved.",
+    )
+
     return parser.parse_args()
 
 
@@ -70,41 +80,35 @@ def main() -> None:
     except ValueError as error:
         raise SystemExit(f"Error: {error}")
 
+    report_arguments = {
+        "input_file": arguments.input,
+        "tickets_analyzed": len(tickets),
+        "incidents": incidents,
+        "threshold": arguments.threshold,
+        "window_minutes": arguments.window,
+    }
+
     if arguments.output_format == "json":
-        print(
-            build_json_report(
-                input_file=arguments.input,
-                tickets_analyzed=len(tickets),
-                incidents=incidents,
-                threshold=arguments.threshold,
-                window_minutes=arguments.window,
+        report_content = build_json_report(**report_arguments)
+    else:
+        report_content = build_text_report(**report_arguments)
+
+    if arguments.output:
+        try:
+            saved_path = save_report(
+                report_content,
+                arguments.output,
             )
-        )
+        except OSError as error:
+            raise SystemExit(
+                f"Error: Could not save report to "
+                f"{arguments.output}: {error}"
+            )
+
+        print(f"Report saved to: {saved_path}")
         return
 
-    print(f"Input file: {arguments.input}")
-    print(f"Analyzed {len(tickets)} support tickets.")
-    print(
-        f"Detection rule: {arguments.threshold} tickets "
-        f"within {arguments.window} minutes."
-    )
-
-    if not incidents:
-        print("No potential incidents detected.")
-        return
-
-    print(f"Detected {len(incidents)} potential incident(s):")
-
-    for incident in incidents:
-        ticket_ids = ", ".join(incident.ticket_ids)
-
-        print()
-        print(f"Category: {incident.category}")
-        print(f"Severity: {incident.severity}")
-        print(f"Ticket count: {incident.ticket_count}")
-        print(f"First seen: {incident.first_seen}")
-        print(f"Last seen: {incident.last_seen}")
-        print(f"Tickets: {ticket_ids}")
+    print(report_content)
 
 
 if __name__ == "__main__":

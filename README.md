@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml/badge.svg)](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml)
 
-A configurable incident detection system that identifies emerging patterns across support tickets, separates distinct periods of related activity, and assigns explainable severity levels.
+A configurable incident detection system that identifies emerging patterns across support tickets, separates distinct periods of related activity, assigns explainable severity levels, and produces integration-ready reports.
 
 ## The Problem
 
@@ -12,7 +12,7 @@ Incident Signal groups tickets by issue category and evaluates their timestamps 
 
 The system can distinguish separate incidents involving the same issue category. For example, a login outage in the morning and another login outage later that afternoon are reported as two incidents instead of being combined or losing the smaller cluster.
 
-Each detected incident also receives a volume-based severity level so teams can prioritize higher-impact activity.
+Each detected incident receives a volume-based severity level. Reports can be displayed in the terminal, returned as structured JSON, or saved as files for downstream systems and operational handoffs.
 
 ## How It Works
 
@@ -31,6 +31,7 @@ flowchart TD
     D --> E[Apply threshold window]
     E --> F[Assign severity]
     F --> G[Build text or JSON report]
+    G --> H[Display or save report]
 ```
 
 The included sample dataset contains 11 fictional tickets:
@@ -191,6 +192,18 @@ Report generation is separated from ingestion and detection. This allows inciden
 
 The `--format json` option produces a stable JSON structure that can be consumed by another application, webhook, dashboard, or incident-management workflow.
 
+### Report Persistence
+
+The optional `--output` setting saves text or JSON reports to a selected file path. Missing parent directories are created automatically.
+
+This supports:
+
+- Operational handoff documents
+- Archived incident snapshots
+- Scheduled automation outputs
+- Inputs for downstream systems
+- Audit and review workflows
+
 ### Input Validation
 
 The ingestion layer verifies that:
@@ -263,12 +276,37 @@ python -m src.main \
   --format json
 ```
 
+Save a JSON report:
+
+```bash
+python -m src.main \
+  --input data/sample_tickets.json \
+  --format json \
+  --output reports/incident-report.json
+```
+
+Save a readable text report:
+
+```bash
+python -m src.main \
+  --input data/sample_tickets.json \
+  --format text \
+  --output reports/incident-report.txt
+```
+
+When a report is saved successfully, Incident Signal returns:
+
+```text
+Report saved to: reports/incident-report.json
+```
+
 Available options:
 
 - `--input` selects the JSON ticket file.
 - `--threshold` controls the minimum number of related tickets required.
 - `--window` controls the detection window in minutes.
 - `--format` selects `text` or `json` output.
+- `--output` optionally saves the report to a selected file path.
 
 View command-line help:
 
@@ -290,11 +328,11 @@ If the selected file does not exist, Incident Signal returns a concise error:
 Error: Input file not found: data/does_not_exist.json
 ```
 
-Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, invalid detection settings, and unsupported output formats are also rejected with clear messages.
+Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, invalid detection settings, unsupported output formats, and report-writing failures are also rejected with clear messages.
 
 ## Test Coverage
 
-The automated suite contains 16 tests covering the detection, ingestion, and reporting layers.
+The automated suite contains 18 tests covering the detection, ingestion, and reporting layers.
 
 The tests verify that the system:
 
@@ -312,19 +350,20 @@ The tests verify that the system:
 - Rejects duplicate ticket IDs.
 - Rejects malformed JSON.
 - Reports missing input files.
-- Includes severity in structured JSON reports.
+- Builds readable text reports.
+- Builds structured JSON reports containing severity.
 - Produces a valid JSON report when no incidents are detected.
+- Saves reports and creates missing parent directories.
 
 ## Continuous Integration
 
-GitHub Actions automatically installs the project dependencies and runs all 16 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
+GitHub Actions automatically installs the project dependencies and runs all 18 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
 
 The test-status badge at the top of this README reflects the latest workflow result from the `main` branch.
 
 ## Future Enhancements
 
 - Ingest CSV exports and webhook payloads.
-- Save reports directly to output files.
 - Send alerts to incident-management or communication systems.
 - Visualize ticket volume and detected incident timelines.
 
@@ -343,6 +382,7 @@ The test-status badge at the top of this README reflects the latest workflow res
 - False-positive prevention
 - Separation of concerns
 - Machine-readable reporting
+- Report persistence
 - Python development
 - Automated testing
 - Continuous integration with GitHub Actions
