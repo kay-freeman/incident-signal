@@ -4,6 +4,19 @@ from datetime import timedelta
 from .models import Incident, SupportTicket
 
 
+def calculate_severity(
+    ticket_count: int,
+    threshold: int,
+) -> str:
+    if ticket_count >= threshold * 3:
+        return "critical"
+
+    if ticket_count >= threshold * 2:
+        return "high"
+
+    return "medium"
+
+
 def split_activity_clusters(
     tickets: list[SupportTicket],
     allowed_window: timedelta,
@@ -85,10 +98,16 @@ def detect_incidents(
             ):
                 continue
 
+            ticket_count = len(cluster)
+
             incidents.append(
                 Incident(
                     category=category,
-                    ticket_count=len(cluster),
+                    severity=calculate_severity(
+                        ticket_count,
+                        threshold,
+                    ),
+                    ticket_count=ticket_count,
                     first_seen=cluster[0].created_at,
                     last_seen=cluster[-1].created_at,
                     ticket_ids=tuple(

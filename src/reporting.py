@@ -24,6 +24,7 @@ def build_json_report(
         "incidents": [
             {
                 "category": incident.category,
+                "severity": incident.severity,
                 "ticket_count": incident.ticket_count,
                 "first_seen": incident.first_seen.isoformat(),
                 "last_seen": incident.last_seen.isoformat(),

@@ -13,6 +13,7 @@ class SupportTicket:
 @dataclass(frozen=True)
 class Incident:
     category: str
+    severity: str
     ticket_count: int
     first_seen: datetime
     last_seen: datetime

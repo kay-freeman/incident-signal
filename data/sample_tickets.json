@@ -19,36 +19,48 @@
   },
   {
     "ticket_id": "TKT-1004",
+    "created_at": "2026-07-26T09:17:00",
+    "category": "login_failure",
+    "summary": "Customer is locked out after completing authentication."
+  },
+  {
+    "ticket_id": "TKT-1005",
+    "created_at": "2026-07-26T09:19:00",
+    "category": "login_failure",
+    "summary": "Sign-in request fails with a service unavailable message."
+  },
+  {
+    "ticket_id": "TKT-1006",
     "created_at": "2026-07-26T09:21:00",
     "category": "login_failure",
     "summary": "User is repeatedly redirected back to the sign-in screen."
   },
   {
-    "ticket_id": "TKT-1005",
+    "ticket_id": "TKT-1007",
     "created_at": "2026-07-26T09:25:00",
     "category": "billing_question",
     "summary": "Customer needs a copy of their latest invoice."
   },
   {
-    "ticket_id": "TKT-1006",
+    "ticket_id": "TKT-1008",
     "created_at": "2026-07-26T09:29:00",
     "category": "profile_update",
     "summary": "User wants to change the phone number on their profile."
   },
   {
-    "ticket_id": "TKT-1007",
+    "ticket_id": "TKT-1009",
     "created_at": "2026-07-26T16:02:00",
     "category": "login_failure",
     "summary": "Customer reports that the sign-in page will not load."
   },
   {
-    "ticket_id": "TKT-1008",
+    "ticket_id": "TKT-1010",
     "created_at": "2026-07-26T16:09:00",
     "category": "login_failure",
     "summary": "User receives an authentication service unavailable message."
   },
   {
-    "ticket_id": "TKT-1009",
+    "ticket_id": "TKT-1011",
     "created_at": "2026-07-26T16:17:00",
     "category": "login_failure",
     "summary": "Customer cannot access the account from the web application."

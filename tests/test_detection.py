@@ -88,3 +88,44 @@ def test_activity_cluster_still_requires_qualifying_window() -> None:
     incidents = detect_incidents(tickets)
 
     assert incidents == []
+
+
+def test_assigns_volume_based_severity() -> None:
+    tickets = [
+        *[
+            make_ticket(
+                f"MED-{number}",
+                f"2026-07-26T09:{number:02d}:00",
+                category="medium_issue",
+            )
+            for number in range(3)
+        ],
+        *[
+            make_ticket(
+                f"HIGH-{number}",
+                f"2026-07-26T10:{number:02d}:00",
+                category="high_issue",
+            )
+            for number in range(6)
+        ],
+        *[
+            make_ticket(
+                f"CRIT-{number}",
+                f"2026-07-26T11:{number:02d}:00",
+                category="critical_issue",
+            )
+            for number in range(9)
+        ],
+    ]
+
+    incidents = detect_incidents(tickets)
+    severity_by_category = {
+        incident.category: incident.severity
+        for incident in incidents
+    }
+
+    assert severity_by_category == {
+        "medium_issue": "medium",
+        "high_issue": "high",
+        "critical_issue": "critical",
+    }

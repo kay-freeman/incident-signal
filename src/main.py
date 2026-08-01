@@ -100,6 +100,7 @@ def main() -> None:
 
         print()
         print(f"Category: {incident.category}")
+        print(f"Severity: {incident.severity}")
         print(f"Ticket count: {incident.ticket_count}")
         print(f"First seen: {incident.first_seen}")
         print(f"Last seen: {incident.last_seen}")

@@ -8,6 +8,7 @@ from src.reporting import build_json_report
 def test_builds_structured_json_report() -> None:
     incident = Incident(
         category="login_failure",
+        severity="medium",
         ticket_count=3,
         first_seen=datetime.fromisoformat("2026-07-26T09:00:00"),
         last_seen=datetime.fromisoformat("2026-07-26T09:20:00"),
@@ -30,6 +31,7 @@ def test_builds_structured_json_report() -> None:
     assert report["detection_rule"]["threshold"] == 3
     assert report["detection_rule"]["window_minutes"] == 30
     assert report["incidents"][0]["category"] == "login_failure"
+    assert report["incidents"][0]["severity"] == "medium"
     assert report["incidents"][0]["ticket_count"] == 3
     assert report["incidents"][0]["first_seen"] == "2026-07-26T09:00:00"
     assert report["incidents"][0]["last_seen"] == "2026-07-26T09:20:00"
