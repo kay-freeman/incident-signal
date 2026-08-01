@@ -1,6 +1,7 @@
 # Incident Signal
 
 [![Tests](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml/badge.svg)](https://github.com/kay-freeman/incident-signal/actions/workflows/tests.yml)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 
 A configurable incident detection system that identifies emerging patterns across support tickets, separates distinct periods of related activity, assigns explainable severity levels, and produces integration-ready reports.
 
@@ -119,6 +120,9 @@ incident-signal/
 │       └── tests.yml
 ├── data/
 │   └── sample_tickets.json
+├── docs/
+│   ├── architecture.md
+│   └── system-requirements.md
 ├── src/
 │   ├── __init__.py
 │   ├── detection.py
@@ -131,9 +135,18 @@ incident-signal/
 │   ├── test_detection.py
 │   ├── test_ingestion.py
 │   └── test_reporting.py
+├── CHANGELOG.md
 ├── requirements.txt
 └── README.md
 ```
+
+## Documentation
+
+Incident Signal includes systems-analysis documentation in addition to source code:
+
+- [System Requirements](docs/system-requirements.md) — business problem, stakeholders, scope, data contract, business rules, functional requirements, nonfunctional requirements, acceptance criteria, and traceability
+- [Architecture and Design](docs/architecture.md) — component responsibilities, runtime flow, detection architecture, design decisions, error handling, privacy, limitations, and extension points
+- [Changelog](CHANGELOG.md) — version history, delivered capabilities, verification results, and privacy confirmation
 
 ## Design Decisions
 
@@ -147,7 +160,7 @@ A sliding window verifies that the required number of related tickets occurred w
 
 ### Multiple-Incident Detection
 
-Tickets are first grouped by category and sorted chronologically. A quiet gap longer than the configured detection window starts a new activity cluster.
+Tickets are grouped by category and sorted chronologically. A quiet gap longer than the configured detection window starts a new activity cluster.
 
 Every activity cluster must independently contain a qualifying threshold window. This allows Incident Signal to:
 
@@ -176,17 +189,13 @@ With the default threshold of three tickets:
 
 Because severity scales with the configured threshold, teams can change the detection rule without creating inconsistent severity behavior.
 
-### Configurable Business Rules
+### Configurable System Behavior
 
-Detection thresholds can be changed through command-line options without modifying the source code. This allows the same system to support teams with different ticket volumes and escalation requirements.
+Users can change the input file, ticket threshold, time window, report format, and output path without modifying source code.
 
-### Configurable Input
+### Separation of Concerns
 
-Users can analyze different JSON ticket files through the `--input` option. The detection engine is not tied exclusively to the included sample dataset.
-
-### Separate Reporting Layer
-
-Report generation is separated from ingestion and detection. This allows incident results to be presented in different formats without changing the underlying business rules.
+Ingestion, detection, reporting, and command-line coordination are implemented as separate layers. Future input sources or output integrations can be introduced without replacing the detection engine.
 
 ### Machine-Readable Output
 
@@ -195,14 +204,6 @@ The `--format json` option produces a stable JSON structure that can be consumed
 ### Report Persistence
 
 The optional `--output` setting saves text or JSON reports to a selected file path. Missing parent directories are created automatically.
-
-This supports:
-
-- Operational handoff documents
-- Archived incident snapshots
-- Scheduled automation outputs
-- Inputs for downstream systems
-- Audit and review workflows
 
 ### Input Validation
 
@@ -221,7 +222,7 @@ Invalid input produces a clear operational error instead of being processed sile
 
 ### Synthetic Data
 
-All sample tickets are fictional. The repository contains no customer information, employer data, or proprietary support records.
+All sample tickets are fictional. The repository contains no customer information, employer data, credentials, or proprietary support records.
 
 ## Running the Project
 
@@ -268,7 +269,7 @@ python -m src.main \
   --window 45
 ```
 
-Generate a machine-readable JSON report:
+Generate a JSON report:
 
 ```bash
 python -m src.main \
@@ -294,19 +295,13 @@ python -m src.main \
   --output reports/incident-report.txt
 ```
 
-When a report is saved successfully, Incident Signal returns:
-
-```text
-Report saved to: reports/incident-report.json
-```
-
 Available options:
 
 - `--input` selects the JSON ticket file.
 - `--threshold` controls the minimum number of related tickets required.
 - `--window` controls the detection window in minutes.
 - `--format` selects `text` or `json` output.
-- `--output` optionally saves the report to a selected file path.
+- `--output` optionally saves the report to a selected path.
 
 View command-line help:
 
@@ -322,13 +317,24 @@ pytest -v
 
 ## Error Handling
 
-If the selected file does not exist, Incident Signal returns a concise error:
+Incident Signal returns concise errors for:
+
+- Missing input files
+- Malformed JSON
+- Invalid data structures
+- Missing required fields
+- Blank values
+- Invalid timestamps
+- Duplicate ticket IDs
+- Invalid thresholds or time windows
+- Unsupported output formats
+- Report-writing failures
+
+Example:
 
 ```text
 Error: Input file not found: data/does_not_exist.json
 ```
-
-Malformed JSON, missing fields, invalid timestamps, blank values, duplicate ticket IDs, invalid detection settings, unsupported output formats, and report-writing failures are also rejected with clear messages.
 
 ## Test Coverage
 
@@ -340,37 +346,63 @@ The tests verify that the system:
 - Detects multiple incidents in the same category.
 - Prevents slow activity from creating a false incident.
 - Assigns medium, high, and critical severity levels.
-- Ignores categories below the configured threshold.
-- Ignores tickets outside the configured time window.
+- Ignores activity below the configured threshold.
 - Rejects invalid detection settings.
-- Loads valid JSON ticket data.
-- Rejects an invalid top-level data structure.
-- Rejects missing required fields.
-- Rejects invalid timestamps.
-- Rejects duplicate ticket IDs.
-- Rejects malformed JSON.
-- Reports missing input files.
+- Loads and validates JSON ticket data.
+- Rejects malformed or incomplete inputs.
+- Detects duplicate ticket IDs.
 - Builds readable text reports.
 - Builds structured JSON reports containing severity.
-- Produces a valid JSON report when no incidents are detected.
+- Handles empty incident results.
 - Saves reports and creates missing parent directories.
 
 ## Continuous Integration
 
-GitHub Actions automatically installs the project dependencies and runs all 18 tests on every push and pull request. This provides immediate feedback when a change breaks existing detection, ingestion, or reporting behavior.
+GitHub Actions automatically installs the project dependencies and runs all 18 tests on every push and pull request.
 
 The test-status badge at the top of this README reflects the latest workflow result from the `main` branch.
+
+## Version 1.0 Status
+
+Version 1.0 is feature-complete.
+
+Delivered capabilities include:
+
+- Validated JSON ingestion
+- Configurable incident detection
+- Multiple same-category incidents
+- False-positive prevention
+- Explainable severity scoring
+- Text and JSON reporting
+- Saved report files
+- Automated testing
+- Continuous integration
+- Requirements traceability
+- Architecture documentation
+- Synthetic public demonstration data
+
+See the [Changelog](CHANGELOG.md) for the complete version history.
 
 ## Future Enhancements
 
 - Ingest CSV exports and webhook payloads.
-- Send alerts to incident-management or communication systems.
-- Visualize ticket volume and detected incident timelines.
+- Connect to a live help-desk API.
+- Send Slack or Jira incident notifications.
+- Visualize ticket volume and incident timelines.
+- Persist incident state between runs.
+- Add timezone normalization.
+- Incorporate additional severity factors.
 
 ## Skills Demonstrated
 
-- Requirements translation
+- Requirements elicitation and translation
 - Systems analysis
+- Business-rule modeling
+- Functional and nonfunctional requirements
+- Acceptance criteria
+- Requirements traceability
+- Architecture documentation
+- Design-decision documentation
 - Data modeling
 - Configurable system design
 - Input validation
